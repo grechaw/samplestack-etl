@@ -1,0 +1,20 @@
+gradle loadPosts -PparseFile=posts/xaa.xml &
+gradle loadPosts -PparseFile=posts/xab.xml &
+gradle loadPosts -PparseFile=posts/xac.xml &
+gradle loadPosts -PparseFile=posts/xad.xml &
+gradle loadPosts -PparseFile=posts/xae.xml &
+gradle loadPosts -PparseFile=posts/xaf.xml &
+gradle loadPosts -PparseFile=posts/xag.xml &
+gradle loadPosts -PparseFile=posts/xah.xml &
+gradle loadPosts -PparseFile=posts/xai.xml 
+gradle loadPosts -PparseFile=posts/xaj.xml &
+gradle loadPosts -PparseFile=posts/xak.xml &
+gradle loadPosts -PparseFile=posts/xal.xml &
+gradle loadPosts -PparseFile=posts/xam.xml &
+gradle loadPosts -PparseFile=posts/xan.xml &
+gradle loadPosts -PparseFile=posts/xao.xml &
+gradle loadPosts -PparseFile=posts/xap.xml &
+gradle loadPosts -PparseFile=posts/xaq.xml &
+gradle loadPosts -PparseFile=posts/xar.xml &
+gradle loadPosts -PparseFile=posts/xas.xml
+

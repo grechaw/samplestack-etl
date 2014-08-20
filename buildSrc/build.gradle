@@ -1,0 +1,21 @@
+apply plugin: "groovy"
+
+
+repositories {
+    mavenCentral()
+    maven { url "https://raw.github.com/marklogic/java-client-api/mvn-repo" }
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.5'
+    compile gradleApi()
+    compile "org.codehaus.groovy:groovy-all:2.2.2"
+    compile("org.codehaus.groovy.modules.http-builder:http-builder:0.7")
+    compile('com.marklogic:client-api-java:3.0.0-EA2') {
+        exclude(group: 'org.slf4j')
+        exclude(group: 'ch.qos.logback')
+    }
+    compile('org.ccil.cowan.tagsoup:tagsoup:1.2.1')
+    compile('org.jdom:jdom:2.0.2')
+    testCompile "junit:junit:4.11"
+}

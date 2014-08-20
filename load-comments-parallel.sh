@@ -1,0 +1,15 @@
+gradle loadComments -PparseFile=comments/xaa.xml &
+gradle loadComments -PparseFile=comments/xab.xml &
+gradle loadComments -PparseFile=comments/xac.xml &
+gradle loadComments -PparseFile=comments/xad.xml &
+gradle loadComments -PparseFile=comments/xae.xml &
+gradle loadComments -PparseFile=comments/xaf.xml &
+gradle loadComments -PparseFile=comments/xag.xml
+gradle loadComments -PparseFile=comments/xah.xml &
+gradle loadComments -PparseFile=comments/xai.xml &
+gradle loadComments -PparseFile=comments/xaj.xml &
+gradle loadComments -PparseFile=comments/xak.xml &
+gradle loadComments -PparseFile=comments/xal.xml &
+gradle loadComments -PparseFile=comments/xam.xml &
+gradle loadComments -PparseFile=comments/xan.xml &
+gradle loadComments -PparseFile=comments/xao.xml
