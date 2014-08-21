@@ -19,7 +19,7 @@ import org.gradle.api.tasks.TaskAction
 
 public class StackTransform extends DefaultTask {
 
-    def start = "/media/cgreer/6488EF9588EF63D0/stackoverflow/"
+    def start = "/home/cgreer/stackoverflow/"
     def parseType = "comments"
     def parseFile = "xaa"
     protected props = new Properties()
