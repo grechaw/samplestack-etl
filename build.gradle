@@ -1,6 +1,7 @@
 apply plugin: "groovy"
 
-task dbClear(type: MarkLogicClearTask)
+// dont clear absent-mindedly
+// task dbClear(type: MarkLogicClearTask)
 
 task loadUsers(type: StackTransform) {
   parseType = "users"
@@ -22,6 +23,10 @@ task loadPosts(type: StackTransform) {
   parseFile = project.parseFile
 }
 
+task dbConfigure(type: MarkLogicConfigureTask)
+dbConfigure.inputDir = file("database")
+dbConfigure.outputDir = file("$buildDir/database")
+dbConfigure.inputProperty = project.properties['taskInputProperty'] ?: "original"
 
 repositories {
     mavenCentral()
