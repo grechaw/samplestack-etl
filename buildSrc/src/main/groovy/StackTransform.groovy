@@ -47,14 +47,16 @@ public class StackTransform extends DefaultTask {
     
 
     String toMarkdown(body) {
+        builder.setFeature("http://xml.org/sax/features/namespaces", false)
         StringWriter writer = new StringWriter()
-        def wf = "<html>" + body + "</html>"
+        def wf = body 
         try {
             def doc = builder.build(new StringReader(wf))
             transformer.transform(new JDOMSource(doc), new StreamResult(writer))
         } catch (IllegalDataException e) {
             logger.error("Skipping a post because of illegal XML character")
         }
+        logger.info writer.toString()
         return writer.toString()
     }
 
