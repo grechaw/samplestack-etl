@@ -64,8 +64,21 @@ declare function make-questions:transform(
     let $accepted-answer-id := data($q/acceptedAnswerId)
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
+    let $tags := $q/tags
+    let $new-tags := array-node { for $t in tokenize($tags, "[<>]") where $t ne "" return $t }
     let $data :=
-        $q + 
+        map:entry("id", $q/id)
+        +
+        map:entry("creationDate", $q/creationDate)
+        +
+        map:entry("body", $q/body)
+        +
+        map:entry("lastActivityDate", $q/lastActivityDate)
+        +
+        map:entry("acceptedAnswerId", $q/acceptedAnswerId)
+        +
+        map:entry("title", $q/title)
+        +
        map:entry("docScore", sum($q//itemTally))   (: this won't work inside this transaction :)
        +
        map:entry("comments", make-questions:comments($post-id))
@@ -77,6 +90,8 @@ declare function make-questions:transform(
        make-questions:votes($post-id)
        +
        map:entry("owner", make-questions:user($q/ownerUserId))
+       +
+       map:entry("tags", $new-tags)
 
    return
        document {

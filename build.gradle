@@ -28,6 +28,10 @@ dbConfigure.inputDir = file("database")
 dbConfigure.outputDir = file("$buildDir/database")
 dbConfigure.inputProperty = project.properties['taskInputProperty'] ?: "original"
 
+task getDoc(type: SamplestackService) {
+  page = project.page
+}
+
 repositories {
     mavenCentral()
     maven { url "https://raw.github.com/marklogic/java-client-api/mvn-repo" }
