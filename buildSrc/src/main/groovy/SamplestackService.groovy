@@ -21,6 +21,7 @@ public class SamplestackService extends DefaultTask {
     protected client
     protected docMgr
     def page = 1
+    def search = ""
 
     SamplestackService() {
        super()
@@ -36,11 +37,16 @@ public class SamplestackService extends DefaultTask {
     }
 
     void fetch(docuri) {
-       outputFile = new File(docuri)
-        def sh = new StringHandle()
+        def fileUri = "database/seed-data" + docuri.replace("question", "questions")
+        def outputFile = new File(fileUri)
+        outputFile.delete()
+        outputFile = new File(fileUri)
+        def handle = new StringHandle()
         def st = new ServerTransform("make-questions")
-        docMgr.read(docuri, sh, st)
-        println sh.get()
+        docMgr.read(docuri, handle, st)
+        def json = handle.get()
+        logger.warn("Creating file " + fileUri)
+        outputFile << json
     }
 
     @TaskAction
@@ -48,7 +54,7 @@ public class SamplestackService extends DefaultTask {
         def PAGE_SIZE = 1000
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
-        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/search?directory=/question/&format=json&options=doclist&start=" + start
+        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/search?directory=/question/&format=json&options=doclist&start=" + start + "&q=" + search
         println url
         RESTClient client = new RESTClient(url)
         client.auth.basic config.marklogic.admin.user, config.marklogic.admin.password

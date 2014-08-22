@@ -10,52 +10,58 @@ declare namespace search = "http://marklogic.com/appservices/search";
 declare option xdmp:mapping "false";
 
 declare function make-questions:user($user-id) {
-  cts:search(collection(), cts:and-query( (cts:directory-query("/contributors/"), cts:json-property-range-query("id","=", $user-id))), "unfiltered") ! 
-  map:new(( map:entry("id", ./id), map:entry("displayName",  ./displayName)) )
+    cts:search(collection(), cts:and-query( (cts:directory-query("/contributors/"), cts:json-property-range-query("id","=", $user-id))), "unfiltered") ! 
+      map:new(
+          ( map:entry("id", "/contributors/" || ./id), 
+            map:entry("displayName",  ./displayName)) )
 };
 
 
 
 declare function make-questions:comments($post-id) {
-   let $comments :=
-     cts:search(collection(), cts:and-query( (cts:directory-query("/comment/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered" ) ! ./node()
-   return array-node {
-      for $c in $comments
-      return $c + map:entry("owner", make-questions:user($c/userId))
-   }
+    let $comments :=
+        cts:search(collection(), cts:and-query( (cts:directory-query("/comment/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered" ) ! ./node()
+    return array-node {
+        for $c in $comments
+        return 
+            map:entry("id", "/comments/" || $c/id) +
+            map:entry("text", $c/text) +
+            map:entry("creationDate", $c/creationDate) +
+            map:entry("owner", make-questions:user($c/userId))
+    }
 };
 
 declare function make-questions:votes($post-id) {
-  let $votes := cts:search(collection(), cts:and-query( (cts:directory-query("/vote/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered") ! ./node()
-  let $up-votes := count($votes[voteTypeId = "2"])
-  let $down-votes := count($votes[voteTypeId = "3"])
-  let $_ := xdmp:log(("FOUND VOTE", $votes))
-  return
-    map:entry("itemTally", $up-votes - $down-votes)
+    let $votes := cts:search(collection(), cts:and-query( (cts:directory-query("/vote/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered") ! ./node()
+    let $up-votes := count($votes[voteTypeId = "2"])
+    let $down-votes := count($votes[voteTypeId = "3"])
+    return
+        map:entry("itemTally", $up-votes - $down-votes)
 };
 
 
 declare function make-questions:answers($post-id, $accepted-id) {
-   let $answers := 
-     cts:search(collection(), cts:and-query( (cts:directory-query("/answer/"), cts:json-property-range-query("parentId","=", $post-id))), "unfiltered" ) ! ./node()
-   return 
-     array-node {
-       for $answer in $answers
-       let $answer-id := data($answer/id)
-       return
-       $answer +
-       map:entry("comments", make-questions:comments($answer//id)) +
-       make-questions:votes($answer-id) +
-       map:entry("owner", make-questions:user($answer/ownerUserId)) +
-       map:entry("creationYearMonth", format-dateTime(data($answer/creationDate), "[Y0001][M01]"))
-     }
-   
+    let $answers := 
+        cts:search(collection(), cts:and-query( (cts:directory-query("/answer/"), cts:json-property-range-query("parentId","=", $post-id))), "unfiltered" ) ! ./node()
+    return 
+        array-node {
+            for $answer in $answers
+            let $answer-id := data($answer/id)
+            return
+                map:entry("id", "/answers/" || $answer/id) +
+                map:entry("text", $answer/body) +
+    map:entry("creationDate", $answer/creationDate) +
+    map:entry("comments", make-questions:comments($answer//id)) +
+    make-questions:votes($answer-id) +
+    map:entry("owner", make-questions:user($answer/ownerUserId)) 
+        }
+
 };
 
 declare function make-questions:transform(
-  $context as map:map,
-  $params as map:map,
-  $content as document-node()
+    $context as map:map,
+    $params as map:map,
+    $content as document-node()
 ) as document-node()
 {
     let $q := $content/object-node()
@@ -65,21 +71,23 @@ declare function make-questions:transform(
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
     let $tags := $q/tags
-    let $new-tags := array-node { for $t in tokenize($tags, "[<>]") where $t ne "" return $t }
+    let $new-tags := 
+        if (exists($tags))
+        then array-node { for $t in tokenize($tags, "[<>]") where $t ne "" return $t }
+        else array-node { }
+    let $votes := make-questions:votes($post-id)
     let $data :=
-        map:entry("id", $q/id)
+        map:entry("id", "/questions/" || $q/id)
         +
         map:entry("creationDate", $q/creationDate)
         +
-        map:entry("body", $q/body)
+        map:entry("text", $q/body)
         +
         map:entry("lastActivityDate", $q/lastActivityDate)
         +
         map:entry("acceptedAnswerId", $q/acceptedAnswerId)
         +
         map:entry("title", $q/title)
-        +
-       map:entry("docScore", sum($q//itemTally))   (: this won't work inside this transaction :)
        +
        map:entry("comments", make-questions:comments($post-id))
        +
@@ -87,14 +95,23 @@ declare function make-questions:transform(
        +
        map:entry("creationYearMonth", format-dateTime(data($q/creationDate), "[Y0001][M01]"))
        +
-       make-questions:votes($post-id)
+       $votes
        +
        map:entry("owner", make-questions:user($q/ownerUserId))
        +
        map:entry("tags", $new-tags)
 
-   return
-       document {
-           xdmp:to-json($data)
-       }
+    let $data-json := xdmp:to-json($data)
+    let $item-tallys := sum($data-json//itemTally/xs:int(.))
+    let $data-with-score := 
+        map:new ( 
+            ($data, 
+             map:entry("docScore", $item-tallys),
+             if (exists($q/acceptedAnswerId)) 
+             then map:entry("accepted", true())
+             else ()))
+       return
+           document {
+               xdmp:to-json($data-with-score)
+           }
 };
