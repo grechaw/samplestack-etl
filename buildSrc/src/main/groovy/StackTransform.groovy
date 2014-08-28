@@ -55,13 +55,13 @@ public class StackTransform extends DefaultTask {
             transformer.transform(new JDOMSource(doc), new StreamResult(writer))
         } catch (IllegalDataException e) {
             logger.error("Skipping a post because of illegal XML character")
+        } catch (Exception e) {
+            logger.error("Skipping a line because of some error")
         }
-        logger.info writer.toString()
         return writer.toString()
     }
 
     void parsePost(rowFile, writeSet) {
-        logger.info("LINE: " + rowFile)
         def row = slurper.parseText(rowFile)
         def postType = "/question/"
         if (row.attribute("PostTypeId") == "2") { postType = "/answer/" }
@@ -114,13 +114,19 @@ public class StackTransform extends DefaultTask {
 
     void parseUser(rowline, writeSet) {
         def row = slurper.parseText(rowline)
-            logger.info("parsing a user")
             def json = new JsonBuilder()
+            def aboutMes = "<body>"+ row.attribute("AboutMe") + "</body>"
+            def markDown = ""
+            try {
+                markDown = toMarkdown(aboutMes)
+            } catch (e) {
+                e.printStackTrace()
+            }
             def root = json {
                 id row.attribute("Id")
                     reputation row.attribute("Reputation")
                     displayName row.attribute("DisplayName")
-                    aboutMe toMarkdown(row.attribute("AboutMe"))
+                    aboutMe markDown
                     websiteUrl row.attribute("WebsiteURL")
                     location row.attribute("Location")
             }
@@ -133,13 +139,13 @@ public class StackTransform extends DefaultTask {
     @TaskAction
     void load() {
         def sourceFile = new File(start + parseFile)
-        def BATCH_SIZE = 1000
+        def BATCH_SIZE = 5000
         def numWritten = 0
         def writeSet = docMgr.newWriteSet()
         sourceFile.eachLine() {
             numWritten++;
             if ( numWritten % BATCH_SIZE == 0) {
-                logger.info("Writing batch")
+                logger.info("Writing batch: " + numWritten + " written")
                 docMgr.write(writeSet)
                 writeSet = docMgr.newWriteSet()
             }

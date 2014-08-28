@@ -4,7 +4,6 @@ apply plugin: "groovy"
 // task dbClear(type: MarkLogicClearTask)
 
 task loadUsers(type: StackTransform) {
-  start = "/media/cgreer/6488EF9588EF63D0/stackoverflow/"
   parseType = "users"
   parseFile = "Users.xml"
 }
