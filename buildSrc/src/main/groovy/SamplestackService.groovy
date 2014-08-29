@@ -20,6 +20,8 @@ public class SamplestackService extends DefaultTask {
     protected props = new Properties()
     protected client
     protected docMgr
+    protected targetClient
+    protected targetDocMgr
     def page = 1
     def search = ""
 
@@ -34,6 +36,14 @@ public class SamplestackService extends DefaultTask {
                    config.marklogic.writer.password,
                    Authentication.DIGEST)
        docMgr = client.newJSONDocumentManager()
+
+       targetClient = DatabaseClientFactory.newClient(
+                   config.marklogic2.rest.host,
+                   Integer.parseInt(config.marklogic2.rest.port),
+                   config.marklogic.writer.user,
+                   config.marklogic.writer.password,
+                   Authentication.DIGEST)
+       targetDocMgr = targetClient.newJSONDocumentManager()
     }
 
     void fetch(docuri) {
@@ -49,23 +59,30 @@ public class SamplestackService extends DefaultTask {
         outputFile << json
     }
 
+
     @TaskAction
     void getDoc() {
         def PAGE_SIZE = 1000
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
-        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/search?directory=/question/&format=json&options=doclist&start=" + start + "&q=" + search
-        println url
+        def limit = start + PAGE_SIZE
+        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/question/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + search
+        logger.info url
         RESTClient client = new RESTClient(url)
-        client.auth.basic config.marklogic.admin.user, config.marklogic.admin.password
+        client.auth.basic config.marklogic.writer.user, config.marklogic.writer.password
         def response = client.get(params)
         def json = response.data
-        def results = json.results
+        def results = json["values-response"]["distinct-value"]
+        def st = new ServerTransform("make-questions")
+        def writeSet = targetDocMgr.newWriteSet()
         def hrefs = results.each {  result ->
-                        def docUri = result.uri
-                        def href = result.href 
-                        fetch(docUri)
+                        def docUri = result._value
+                        def newUri = docUri.replaceAll(~"question", "questions")
+                        def docHandle = new StringHandle()
+                        docMgr.read(docUri, docHandle, st)
+                        writeSet.add(newUri, docHandle)
                         }
-        
+        targetDocMgr.write(writeSet)
+        logger.info("Wrote page number "+ page)
     }
 }

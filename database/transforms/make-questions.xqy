@@ -70,7 +70,7 @@ declare function make-questions:transform(
     let $accepted-answer-id := data($q/acceptedAnswerId)
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
-    let $tags := $q/tags
+    let $tags := data($q/tags)
     let $new-tags := 
         if (exists($tags))
         then array-node { for $t in tokenize($tags, "[<>]") where $t ne "" return $t }
