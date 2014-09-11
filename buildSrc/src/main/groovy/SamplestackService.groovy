@@ -60,24 +60,28 @@ public class SamplestackService extends DefaultTask {
     }
 
 
-    @TaskAction
     void getDoc() {
+        getThings("question", "make-questions")
+    }
+
+    void getThings(directory, transformName) {
         def PAGE_SIZE = 1000
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
         def limit = start + PAGE_SIZE
-        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/question/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + search
+        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/" + directory + "/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + search
         logger.info url
         RESTClient client = new RESTClient(url)
         client.auth.basic config.marklogic.writer.user, config.marklogic.writer.password
         def response = client.get(params)
         def json = response.data
         def results = json["values-response"]["distinct-value"]
-        def st = new ServerTransform("make-questions")
+        def st = new ServerTransform(transformName)
         def writeSet = targetDocMgr.newWriteSet()
         def hrefs = results.each {  result ->
                         def docUri = result._value
                         def newUri = docUri.replaceAll(~"question", "questions")
+                        newUri = docUri.replaceAll(~"contributors", "com.marklogic.samplestack.domain.Contributor")
                         def docHandle = new StringHandle()
                         docMgr.read(docUri, docHandle, st)
                         writeSet.add(newUri, docHandle)

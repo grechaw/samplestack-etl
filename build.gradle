@@ -32,6 +32,10 @@ task getDocs(type: SamplestackService) {
   page = project.page
 }
 
+task getUsers(type: SamplestackContribService) {
+  page = project.page
+}
+
 repositories {
     mavenCentral()
     maven { url "https://raw.github.com/marklogic/java-client-api/mvn-repo" }

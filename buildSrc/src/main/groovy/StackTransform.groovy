@@ -19,7 +19,7 @@ import org.gradle.api.tasks.TaskAction
 
 public class StackTransform extends DefaultTask {
 
-    def start = "/home/cgreer/stackoverflow/"
+    def start = "/home/cgreer/third_party/stackoverflow-2014-05/"
     def parseType = "comments"
     def parseFile = "xaa"
     protected props = new Properties()
@@ -105,7 +105,7 @@ public class StackTransform extends DefaultTask {
                 id row.attribute("Id")
                 postId row.attribute("PostId")
                 text row.attribute("Text")
-                userId row.attribute("UserId")
+                userId "importedUser" + row.attribute("Id") + "_at_stackoverflow.com"
                 creationDate row.attribute("CreationDate")
         }
         writeSet.add("/comment/" + row.attribute("Id") + ".json",
@@ -122,14 +122,15 @@ public class StackTransform extends DefaultTask {
             } catch (e) {
                 e.printStackTrace()
             }
-            def root = json {
-                id row.attribute("Id")
+            def root = json { "com.marklogic.samplestack.domain.Contributor" {
+                    id row.attribute("Id")
                     reputation row.attribute("Reputation")
                     displayName row.attribute("DisplayName")
+                    userName "souser" + row.attribute("Id") + "@email.com"
                     aboutMe markDown
                     websiteUrl row.attribute("WebsiteURL")
                     location row.attribute("Location")
-            }
+            }}
         writeSet.add("/contributors/" + row.attribute("Id") + ".json",
                new StringHandle(json.toString()))
     }

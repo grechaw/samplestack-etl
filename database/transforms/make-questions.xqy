@@ -12,8 +12,9 @@ declare option xdmp:mapping "false";
 declare function make-questions:user($user-id) {
     cts:search(collection(), cts:and-query( (cts:directory-query("/contributors/"), cts:json-property-range-query("id","=", $user-id))), "unfiltered") ! 
       map:new(
-          ( map:entry("id", "/contributors/" || ./id), 
-            map:entry("displayName",  ./displayName)) )
+          ( map:entry("id", .//id), 
+            map:entry("userName", .//userName),
+            map:entry("displayName",  .//displayName)) )
 };
 
 
