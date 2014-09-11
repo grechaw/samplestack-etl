@@ -32,8 +32,8 @@ public class SamplestackService extends DefaultTask {
        client = DatabaseClientFactory.newClient(
                    config.marklogic.rest.host,
                    Integer.parseInt(config.marklogic.rest.port),
-                   config.marklogic.writer.user,
-                   config.marklogic.writer.password,
+                   config.marklogic.admin.user,
+                   config.marklogic.admin.password,
                    Authentication.DIGEST)
        docMgr = client.newJSONDocumentManager()
 
@@ -59,11 +59,6 @@ public class SamplestackService extends DefaultTask {
         outputFile << json
     }
 
-
-    void getDoc() {
-        getThings("question", "make-questions")
-    }
-
     void getThings(directory, transformName) {
         def PAGE_SIZE = 1000
         def params = [:]
@@ -81,7 +76,7 @@ public class SamplestackService extends DefaultTask {
         def hrefs = results.each {  result ->
                         def docUri = result._value
                         def newUri = docUri.replaceAll(~"question", "questions")
-                        newUri = docUri.replaceAll(~"contributors", "com.marklogic.samplestack.domain.Contributor")
+                        newUri = newUri.replaceAll(~"contributors", "com.marklogic.samplestack.domain.Contributor")
                         def docHandle = new StringHandle()
                         docMgr.read(docUri, docHandle, st)
                         writeSet.add(newUri, docHandle)
