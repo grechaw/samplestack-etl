@@ -9,6 +9,8 @@ import com.marklogic.client.DatabaseClientFactory
 import com.marklogic.client.DatabaseClientFactory.Authentication
 import com.marklogic.client.io.StringHandle
 import com.marklogic.client.document.ServerTransform
+import com.marklogic.client.io.DocumentMetadataHandle
+import com.marklogic.client.io.DocumentMetadataHandle.Capability
 import org.jdom2.transform.JDOMSource
 import org.jdom2.input.SAXBuilder
 import org.jdom2.IllegalDataException
@@ -73,14 +75,22 @@ public class SamplestackService extends DefaultTask {
         def results = json["values-response"]["distinct-value"]
         def st = new ServerTransform(transformName)
         def writeSet = targetDocMgr.newWriteSet()
+        def acceptedPermissionMetadata = new DocumentMetadataHandle().withPermission("samplestack-guest", Capability.READ)
+        def pojoCollectionMetadata = new DocumentMetadataHandle().withCollections("com.marklogic.samplestack.domain.Contributor")
         def hrefs = results.each {  result ->
                         def docUri = result._value
-                        def newUri = docUri.replaceAll(~"question", "questions")
-                        newUri = newUri.replaceAll(~"contributors", "com.marklogic.samplestack.domain.Contributor")
+                        def newUri = docUri.replaceAll(~"question/", "questions/soQuestion")
+                        newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/soUser")
                         def docHandle = new StringHandle()
                         docMgr.read(docUri, docHandle, st)
-                        writeSet.add(newUri, docHandle)
+                        if (docHandle.get().contains("acceptedAnswerId")) {
+                            writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
+                        } else if (docHandle.get().contains("domain.Contributor")) {
+                            writeSet.add(newUri, pojoCollectionMetadata, docHandle)
+                        } else {
+                            writeSet.add(newUri, docHandle)
                         }
+                }
         targetDocMgr.write(writeSet)
         logger.info("Wrote page number "+ page)
     }

@@ -29,7 +29,7 @@ declare function make-contribs:transform(
             (
                 map:entry("com.marklogic.samplestack.domain.Contributor",
                 map:new( 
-                    map:entry("id", concat("soUserId", string($q//id)))
+                    map:entry("id", concat("soUser", string($q//id)))
                     + map:entry("reputation", $q//reputation)
                     + map:entry("displayName", $q//displayName)
                     + map:entry("userName", $q//userName)
