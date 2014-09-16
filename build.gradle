@@ -28,11 +28,11 @@ dbConfigure.inputDir = file("database")
 dbConfigure.outputDir = file("$buildDir/database")
 dbConfigure.inputProperty = project.properties['taskInputProperty'] ?: "original"
 
-task getDocs(type: SamplestackPostService) {
+task makeSamplestackDocs(type: SamplestackPostService) {
   page = project.page
 }
 
-task getUsers(type: SamplestackContribService) {
+task makeSamplestackUsers(type: SamplestackContribService) {
   page = project.page
 }
 

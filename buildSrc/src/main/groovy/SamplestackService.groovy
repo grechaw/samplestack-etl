@@ -62,7 +62,7 @@ public class SamplestackService extends DefaultTask {
     }
 
     void getThings(directory, transformName) {
-        def PAGE_SIZE = 1000
+        def PAGE_SIZE = 10000
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
         def limit = start + PAGE_SIZE
@@ -77,18 +77,26 @@ public class SamplestackService extends DefaultTask {
         def writeSet = targetDocMgr.newWriteSet()
         def acceptedPermissionMetadata = new DocumentMetadataHandle().withPermission("samplestack-guest", Capability.READ)
         def pojoCollectionMetadata = new DocumentMetadataHandle().withCollections("com.marklogic.samplestack.domain.Contributor")
+        def readUris = new java.util.ArrayList()
         def hrefs = results.each {  result ->
                         def docUri = result._value
-                        def newUri = docUri.replaceAll(~"question/", "questions/soQuestion")
-                        newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/soUser")
-                        def docHandle = new StringHandle()
-                        docMgr.read(docUri, docHandle, st)
-                        if (docHandle.get().contains("acceptedAnswerId")) {
-                            writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
-                        } else if (docHandle.get().contains("domain.Contributor")) {
-                            writeSet.add(newUri, pojoCollectionMetadata, docHandle)
-                        } else {
-                            writeSet.add(newUri, docHandle)
+                        readUris.add(docUri)
+        }
+        logger.info("Getting " + readUris.size() + " docs.")
+        def readSet = docMgr.read(st, null, readUris.toArray(new String[1]))
+        while (readSet.hasNext()) {
+                def docRecord = readSet.next()
+                def docUri = docRecord.getUri()
+                def docHandle = docRecord.getContent(new StringHandle())
+                def newUri = docUri.replaceAll(~"question/", "questions/soQuestion")
+                logger.debug("processing page run... " + docUri() + " to " + newUri)
+                newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/soUser")
+                if (docHandle.get().contains("acceptedAnswerId")) {
+                    writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
+                } else if (docHandle.get().contains("domain.Contributor")) {
+                    writeSet.add(newUri, pojoCollectionMetadata, docHandle)
+                } else {
+                    writeSet.add(newUri, docHandle)
                         }
                 }
         targetDocMgr.write(writeSet)
