@@ -62,7 +62,7 @@ public class SamplestackService extends DefaultTask {
     }
 
     void getThings(directory, transformName) {
-        def PAGE_SIZE = 10000
+        def PAGE_SIZE = 100
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
         def limit = start + PAGE_SIZE
@@ -89,7 +89,7 @@ public class SamplestackService extends DefaultTask {
                 def docUri = docRecord.getUri()
                 def docHandle = docRecord.getContent(new StringHandle())
                 def newUri = docUri.replaceAll(~"question/", "questions/soQuestion")
-                logger.debug("processing page run... " + docUri() + " to " + newUri)
+                logger.debug("processing page run... " + docUri + " to " + newUri)
                 newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/soUser")
                 if (docHandle.get().contains("acceptedAnswerId")) {
                     writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
