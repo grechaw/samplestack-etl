@@ -12,7 +12,7 @@ declare option xdmp:mapping "false";
 declare function make-questions:user($user-id) {
     cts:search(collection(), cts:and-query( (cts:directory-query("/contributors/"), cts:json-property-range-query("id","=", $user-id))), "unfiltered") ! 
       map:new(
-          ( map:entry("id", concat("soUser", string(.//id))), 
+          ( map:entry("id", concat("sou", string(.//id))), 
             map:entry("userName", .//userName),
             map:entry("displayName",  .//displayName)) )
 };
@@ -25,7 +25,7 @@ declare function make-questions:comments($post-id) {
     return array-node {
         for $c in $comments
         return 
-            map:entry("id", concat("soComment", string($c/id))) +
+            map:entry("id", concat("soc", string($c/id))) +
             map:entry("text", $c/text) +
             map:entry("creationDate", $c/creationDate) +
             map:entry("owner", make-questions:user($c/userId))
@@ -49,7 +49,7 @@ declare function make-questions:answers($post-id, $accepted-id) {
             for $answer in $answers
             let $answer-id := data($answer/id)
             return
-                map:entry("id", concat("soAnswer", string($answer/id))) +
+                map:entry("id", concat("soa", string($answer/id))) +
                 map:entry("text", $answer/body) +
     map:entry("creationDate", $answer/creationDate) +
     map:entry("comments", make-questions:comments($answer//id)) +
@@ -78,7 +78,9 @@ declare function make-questions:transform(
         else array-node { }
     let $votes := make-questions:votes($post-id)
     let $data :=
-        map:entry("id", concat("soQuestion", string($q/id)))
+        map:entry("id", concat("soq", string($q/id)))
+        +
+        map:entry("originalId", concat(string($q/id)))
         +
         map:entry("creationDate", $q/creationDate)
         +
@@ -86,7 +88,7 @@ declare function make-questions:transform(
         +
         map:entry("lastActivityDate", $q/lastActivityDate)
         +
-        map:entry("acceptedAnswerId", concat("soAnswer", string($q/acceptedAnswerId)))
+        map:entry("acceptedAnswerId", concat("soa", string($q/acceptedAnswerId)))
         +
         map:entry("title", $q/title)
        +
@@ -105,7 +107,7 @@ declare function make-questions:transform(
     let $data-with-score := 
         map:new ( 
             ($data, 
-             map:entry("docScore", $item-tallys),
+             map:entry("voteCount", $item-tallys),
              if (exists($q/acceptedAnswerId)) 
              then map:entry("accepted", true())
              else ()))

@@ -14,6 +14,7 @@ import com.marklogic.client.io.DocumentMetadataHandle.Capability
 import org.jdom2.transform.JDOMSource
 import org.jdom2.input.SAXBuilder
 import org.jdom2.IllegalDataException
+import java.net.URLEncoder
 
 import org.gradle.api.tasks.TaskAction
 
@@ -25,7 +26,7 @@ public class SamplestackService extends DefaultTask {
     protected targetClient
     protected targetDocMgr
     def page = 1
-    def search = ""
+    def search = "(marklogic OR mongodb) AND (java OR javascript) AND (json OR xml)"
 
     SamplestackService() {
        super()
@@ -62,11 +63,11 @@ public class SamplestackService extends DefaultTask {
     }
 
     void getThings(directory, transformName) {
-        def PAGE_SIZE = 100
+        def PAGE_SIZE = 1676
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
         def limit = start + PAGE_SIZE
-        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/" + directory + "/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + search
+        def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/" + directory + "/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + java.net.URLEncoder.encode(search)
         logger.info url
         RESTClient client = new RESTClient(url)
         client.auth.basic config.marklogic.writer.user, config.marklogic.writer.password
