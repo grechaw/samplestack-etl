@@ -89,9 +89,9 @@ public class SamplestackService extends DefaultTask {
                 def docRecord = readSet.next()
                 def docUri = docRecord.getUri()
                 def docHandle = docRecord.getContent(new StringHandle())
-                def newUri = docUri.replaceAll(~"question/", "questions/soQuestion")
+                def newUri = docUri.replaceAll(~"question/", "questions/soq")
                 logger.debug("processing page run... " + docUri + " to " + newUri)
-                newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/soUser")
+                newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/sou")
                 if (docHandle.get().contains("acceptedAnswerId")) {
                     writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
                 } else if (docHandle.get().contains("domain.Contributor")) {
