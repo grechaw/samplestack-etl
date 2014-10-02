@@ -26,7 +26,8 @@ public class SamplestackService extends DefaultTask {
     protected targetClient
     protected targetDocMgr
     def page = 1
-    def search = "(marklogic OR mongodb) AND (java OR javascript) AND (json OR xml)"
+    //def search = "(marklogic OR mongodb) AND (java OR javascript) AND (json OR xml)"
+    def search = ""
 
     SamplestackService() {
        super()
@@ -77,7 +78,7 @@ public class SamplestackService extends DefaultTask {
         def st = new ServerTransform(transformName)
         def writeSet = targetDocMgr.newWriteSet()
         def acceptedPermissionMetadata = new DocumentMetadataHandle().withPermission("samplestack-guest", Capability.READ)
-        def pojoCollectionMetadata = new DocumentMetadataHandle().withCollections("com.marklogic.samplestack.domain.Contributor")
+        def pojoCollectionMetadata = new DocumentMetadataHandle().withCollections("com.marklogic.samplestack.domain.Contributor").withPermission("samplestack-guest", Capability.READ)
         def readUris = new java.util.ArrayList()
         def hrefs = results.each {  result ->
                         def docUri = result._value

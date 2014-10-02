@@ -11,8 +11,12 @@ declare option xdmp:mapping "false";
 
 
 declare function make-contribs:votes($user-id) {
-    (: need a function to get votes for a user :)
-    map:entry("votes", json:array(  ) )
+    map:entry("votes", 
+        map:new(
+            map:entry("java.util.HashSet",
+                json:array(
+                ) 
+    )))
 };
 
 
