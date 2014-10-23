@@ -13,6 +13,7 @@ declare function make-questions:user($user-id) {
     cts:search(collection(), cts:and-query( (cts:directory-query("/contributors/"), cts:json-property-range-query("id","=", $user-id))), "unfiltered") ! 
       map:new(
           ( map:entry("id", concat("sou", string(.//id))), 
+            map:entry("originalId", .//id),
             map:entry("userName", .//userName),
             map:entry("displayName",  .//displayName)) )
 };
@@ -69,6 +70,11 @@ declare function make-questions:transform(
     let $user-id := data($q/ownerUserId)
     let $post-id := data($q/id)
     let $accepted-answer-id := data($q/acceptedAnswerId)
+    let $accepted := 
+        if ($accepted-answer-id)
+        then map:entry("acceptedAnswerId", concat("soa", string($q/acceptedAnswerId)))
+        else
+            map:entry("acceptedAnswerId", ())
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
     let $tags := data($q/tags)
@@ -88,7 +94,7 @@ declare function make-questions:transform(
         +
         map:entry("lastActivityDate", $q/lastActivityDate)
         +
-        map:entry("acceptedAnswerId", concat("soa", string($q/acceptedAnswerId)))
+        $accepted
         +
         map:entry("title", $q/title)
        +
@@ -106,11 +112,14 @@ declare function make-questions:transform(
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
     let $data-with-score := 
         map:new ( 
-            ($data, 
-             map:entry("voteCount", $item-tallys),
-             if (exists($q/acceptedAnswerId)) 
-             then map:entry("accepted", true())
-             else ()))
+            (map:entry("question", map:new( (
+                $data, 
+                map:entry("voteCount", $item-tallys),
+                if (exists($q/acceptedAnswerId)) 
+                then map:entry("accepted", true())
+                else map:entry("accepted", false())
+                )))
+            ))
        return
            document {
                xdmp:to-json($data-with-score)
