@@ -110,16 +110,16 @@ declare function make-questions:transform(
 
     let $data-json := xdmp:to-json($data)
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
+    let $answer-count := json:array-size($data-json//answers)
     let $data-with-score := 
-        map:new ( 
-            (map:entry("question", map:new( (
+        map:new ( (
                 $data, 
                 map:entry("voteCount", $item-tallys),
+                map:entry("answerCount", $answer-count),
                 if (exists($q/acceptedAnswerId)) 
                 then map:entry("accepted", true())
                 else map:entry("accepted", false())
-                )))
-            ))
+                ))
        return
            document {
                xdmp:to-json($data-with-score)
