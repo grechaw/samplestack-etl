@@ -25,6 +25,7 @@ public class SamplestackService extends DefaultTask {
     protected docMgr
     protected targetClient
     protected targetDocMgr
+    def THREADWIDTH = 20
     def page = 1
     //def search = "(marklogic OR mongodb) AND (java OR javascript) AND (json OR xml)"
     def search = ""
@@ -50,11 +51,27 @@ public class SamplestackService extends DefaultTask {
        targetDocMgr = targetClient.newJSONDocumentManager()
     }
 
-    void getThings(directory, transformName) {
-        def PAGE_SIZE = 1000  // for easy math
+    void threadedThings(directory, transformName) {
+        def th = []
+        /* ten wide loop */
+        for ( i in 0.. THREADWIDTH - 1 ) {
+            th.push(Thread.start {
+                    getThings(directory, transformName, i)
+                })
+        }
+        for ( t in th ) { 
+            t.join()
+        }
+    }
+
+    void getThings(directory, transformName, part) {
+        def PAGE_SIZE = 500  // for easy math
         def params = [:]
-        def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
+        def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE * THREADWIDTH)
         def limit = start + PAGE_SIZE
+        start += PAGE_SIZE * part
+        limit += PAGE_SIZE * part
+        logger.info("Loading part " + part + ", page size " + PAGE_SIZE)
         def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/" + directory + "/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + java.net.URLEncoder.encode(search)
         logger.info url
         RESTClient client = new RESTClient(url)
@@ -87,12 +104,8 @@ public class SamplestackService extends DefaultTask {
                 def jsonString = docHandle.get()
                 logger.warn("Creating file " + newUri)
                 outputFile << jsonString
-        }
 
-
-/*
- * this is the posting service
- * changing to read-only at this point
+            // this part loads marklogic too
                 if (docHandle.get().contains("acceptedAnswerId")) {
                     writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
                 } else if (docHandle.get().contains("domain.Contributor")) {
@@ -102,7 +115,6 @@ public class SamplestackService extends DefaultTask {
                         }
                 }
         targetDocMgr.write(writeSet)
-*/
-        logger.info("Wrote page number "+ page)
+        logger.info("Wrote page number "+ page + " part " + part)
     }
 }

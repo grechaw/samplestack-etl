@@ -8,6 +8,6 @@ public class SamplestackPostService extends SamplestackService {
 
     @TaskAction
     void getDoc() {
-        getThings("question", "make-questions")
+        threadedThings("question", "make-questions")
     }
 }
