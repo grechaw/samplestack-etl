@@ -74,7 +74,7 @@ declare function make-questions:transform(
         if ($accepted-answer-id)
         then map:entry("acceptedAnswerId", concat("soa", string($q/acceptedAnswerId)))
         else
-            map:entry("acceptedAnswerId", ())
+            map:entry("acceptedAnswerId", null-node { })
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
     let $tags := data($q/tags)
@@ -110,13 +110,13 @@ declare function make-questions:transform(
 
     let $data-json := xdmp:to-json($data)
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
-    let $answer-count := json:array-size($data-json//answers)
+    let $answer-count := count($data-json//array-node('answers'))
     let $data-with-score := 
         map:new ( (
                 $data, 
                 map:entry("voteCount", $item-tallys),
                 map:entry("answerCount", $answer-count),
-                if (exists($q/acceptedAnswerId)) 
+                if ($q/acceptedAnswerId/string()) 
                 then map:entry("accepted", true())
                 else map:entry("accepted", false())
                 ))
