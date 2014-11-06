@@ -50,21 +50,8 @@ public class SamplestackService extends DefaultTask {
        targetDocMgr = targetClient.newJSONDocumentManager()
     }
 
-    void fetch(docuri) {
-        def fileUri = "database/seed-data" + docuri.replace("question", "questions")
-        def outputFile = new File(fileUri)
-        outputFile.delete()
-        outputFile = new File(fileUri)
-        def handle = new StringHandle()
-        def st = new ServerTransform("make-questions")
-        docMgr.read(docuri, handle, st)
-        def json = handle.get()
-        logger.warn("Creating file " + fileUri)
-        outputFile << json
-    }
-
     void getThings(directory, transformName) {
-        def PAGE_SIZE = 1676
+        def PAGE_SIZE = 1000  // for easy math
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE)
         def limit = start + PAGE_SIZE
@@ -91,8 +78,21 @@ public class SamplestackService extends DefaultTask {
                 def docUri = docRecord.getUri()
                 def docHandle = docRecord.getContent(new StringHandle())
                 def newUri = docUri.replaceAll(~"question/", "questions/soq")
-                logger.debug("processing page run... " + docUri + " to " + newUri)
                 newUri = newUri.replaceAll(~"/contributors/", "com.marklogic.samplestack.domain.Contributor/sou")
+                logger.debug("processing page run... " + docUri + " to " + newUri)
+                def fileUri = "database/seed-data/" + newUri
+                def outputFile = new File(fileUri)
+                outputFile.delete()
+                outputFile = new File(fileUri)
+                def jsonString = docHandle.get()
+                logger.warn("Creating file " + newUri)
+                outputFile << jsonString
+        }
+
+
+/*
+ * this is the posting service
+ * changing to read-only at this point
                 if (docHandle.get().contains("acceptedAnswerId")) {
                     writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
                 } else if (docHandle.get().contains("domain.Contributor")) {
@@ -102,6 +102,7 @@ public class SamplestackService extends DefaultTask {
                         }
                 }
         targetDocMgr.write(writeSet)
+*/
         logger.info("Wrote page number "+ page)
     }
 }
