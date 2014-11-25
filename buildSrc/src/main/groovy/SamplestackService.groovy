@@ -26,8 +26,8 @@ public class SamplestackService extends DefaultTask {
     protected targetClient
     protected targetDocMgr
     def THREADWIDTH = 20
+    def PAGE_SIZE = 500  // for easy math make TH*P = 10000
     def page = 1
-    //def search = "(marklogic OR mongodb) AND (java OR javascript) AND (json OR xml)"
     def search = ""
 
     SamplestackService() {
@@ -54,10 +54,11 @@ public class SamplestackService extends DefaultTask {
     void threadedThings(directory, transformName) {
         def th = []
         /* ten wide loop */
-        for ( i in 0.. THREADWIDTH - 1 ) {
+        for ( i in 0.. (THREADWIDTH - 1) ) {
             th.push(Thread.start {
                     getThings(directory, transformName, i)
                 })
+            sleep(1000)
         }
         for ( t in th ) { 
             t.join()
@@ -65,20 +66,23 @@ public class SamplestackService extends DefaultTask {
     }
 
     void getThings(directory, transformName, part) {
-        def PAGE_SIZE = 500  // for easy math
         def params = [:]
         def start = 1 + ((Integer.parseInt(page) - 1) * PAGE_SIZE * THREADWIDTH)
         def limit = start + PAGE_SIZE
         start += PAGE_SIZE * part
         limit += PAGE_SIZE * part
-        logger.info("Loading part " + part + ", page size " + PAGE_SIZE)
+        logger.info("Starting page " + page + ", part " + part + ", page size " + PAGE_SIZE)
         def url = "http://" + config.marklogic.rest.host + ":" + config.marklogic.rest.port + "/v1/values/uris?directory=/" + directory + "/&format=json&options=doclist&start=" + start + "&limit=" + limit + "&q=" + java.net.URLEncoder.encode(search)
-        logger.info url
+        logger.debug url
         RESTClient client = new RESTClient(url)
         client.auth.basic config.marklogic.writer.user, config.marklogic.writer.password
         def response = client.get(params)
         def json = response.data
         def results = json["values-response"]["distinct-value"]
+        if (results == null) {
+            logger.info("No results on page " + page + " part " + part)
+            return
+        }
         def st = new ServerTransform(transformName)
         def writeSet = targetDocMgr.newWriteSet()
         def acceptedPermissionMetadata = new DocumentMetadataHandle().withPermission("samplestack-guest", Capability.READ)
@@ -88,7 +92,7 @@ public class SamplestackService extends DefaultTask {
                         def docUri = result._value
                         readUris.add(docUri)
         }
-        logger.info("Getting " + readUris.size() + " docs.")
+        logger.debug("Getting " + readUris.size() + " docs.")
         def readSet = docMgr.read(st, null, readUris.toArray(new String[1]))
         while (readSet.hasNext()) {
                 def docRecord = readSet.next()
@@ -102,19 +106,22 @@ public class SamplestackService extends DefaultTask {
                 outputFile.delete()
                 outputFile = new File(fileUri)
                 def jsonString = docHandle.get()
-                logger.warn("Creating file " + newUri)
+                logger.debug("Creating file " + newUri)
                 outputFile << jsonString
+                def handle2 = new StringHandle()
+                handle2.set(jsonString)
 
             // this part loads marklogic too
                 if (docHandle.get().contains("acceptedAnswerId")) {
-                    writeSet.add(newUri, acceptedPermissionMetadata, docHandle)
+                    writeSet.add(newUri, acceptedPermissionMetadata, handle2)
                 } else if (docHandle.get().contains("domain.Contributor")) {
-                    writeSet.add(newUri, pojoCollectionMetadata, docHandle)
+                    writeSet.add(newUri, pojoCollectionMetadata, handle2)
                 } else {
-                    writeSet.add(newUri, docHandle)
+                    writeSet.add(newUri, handle2)
                         }
                 }
         targetDocMgr.write(writeSet)
+        
         logger.info("Wrote page number "+ page + " part " + part)
     }
 }
