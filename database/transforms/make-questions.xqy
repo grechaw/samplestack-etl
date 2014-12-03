@@ -52,10 +52,10 @@ declare function make-questions:answers($post-id, $accepted-id) {
             return
                 map:entry("id", concat("soa", string($answer/id))) +
                 map:entry("text", $answer/body) +
-    map:entry("creationDate", $answer/creationDate) +
-    map:entry("comments", make-questions:comments($answer//id)) +
-    make-questions:votes($answer-id) +
-    map:entry("owner", make-questions:user($answer/ownerUserId)) 
+                map:entry("creationDate", $answer/creationDate) +
+                map:entry("comments", make-questions:comments($answer//id)) +
+                make-questions:votes($answer-id) +
+                map:entry("owner", make-questions:user($answer/ownerUserId)) 
         }
 
 };
@@ -110,7 +110,7 @@ declare function make-questions:transform(
 
     let $data-json := xdmp:to-json($data)
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
-    let $answer-count := count($data-json//array-node('answers'))
+    let $answer-count := json:array-size(xdmp:from-json($data-json//array-node('answers')))
     let $data-with-score := 
         map:new ( (
                 $data, 
