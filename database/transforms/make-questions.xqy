@@ -117,8 +117,13 @@ declare function make-questions:transform(
                 map:entry("voteCount", $item-tallys),
                 map:entry("answerCount", $answer-count),
                 if ($q/acceptedAnswerId/string()) 
+                (: workaround to work with EA-3 server 
+                 : TODO, go back to boolean for 8.0-1
                 then map:entry("accepted", true())
                 else map:entry("accepted", false())
+                :)
+                then map:entry("accepted", "true")
+                else map:entry("accepted", "false")
                 ))
        return
            document {
