@@ -23,6 +23,6 @@ public class SamplestackContribService extends SamplestackService {
 
     @TaskAction
     void getUsers() {
-        super.getThings("contributors", "make-contribs")
+        super.threadedThings("contributors", "make-contribs")
     }
 }
