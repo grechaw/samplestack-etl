@@ -35,3 +35,10 @@ http://www.lowerelement.com/Geekery/XML/markdown.xsl
 Put it in the root directory of this project
 
 
+More notes.
+once I have a dump of questions, pipe each through python -mjson.tool, then
+
+for $x in *.json; do python -mjson.tool $x > $x.j ; done
+grep '"id": "sou' *.j
+
+then vim it and through sort -u

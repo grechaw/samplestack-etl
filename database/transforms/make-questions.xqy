@@ -52,10 +52,10 @@ declare function make-questions:answers($post-id, $accepted-id) {
             return
                 map:entry("id", concat("soa", string($answer/id))) +
                 map:entry("text", $answer/body) +
-    map:entry("creationDate", $answer/creationDate) +
-    map:entry("comments", make-questions:comments($answer//id)) +
-    make-questions:votes($answer-id) +
-    map:entry("owner", make-questions:user($answer/ownerUserId)) 
+                map:entry("creationDate", $answer/creationDate) +
+                map:entry("comments", make-questions:comments($answer//id)) +
+                make-questions:votes($answer-id) +
+                map:entry("owner", make-questions:user($answer/ownerUserId)) 
         }
 
 };
@@ -110,15 +110,20 @@ declare function make-questions:transform(
 
     let $data-json := xdmp:to-json($data)
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
-    let $answer-count := count($data-json//array-node('answers'))
+    let $answer-count := json:array-size(xdmp:from-json($data-json//array-node('answers')))
     let $data-with-score := 
         map:new ( (
                 $data, 
                 map:entry("voteCount", $item-tallys),
                 map:entry("answerCount", $answer-count),
                 if ($q/acceptedAnswerId/string()) 
+                (: workaround to work with EA-3 server 
+                 : TODO, go back to boolean for 8.0-1
                 then map:entry("accepted", true())
                 else map:entry("accepted", false())
+                :)
+                then map:entry("accepted", "true")
+                else map:entry("accepted", "false")
                 ))
        return
            document {
