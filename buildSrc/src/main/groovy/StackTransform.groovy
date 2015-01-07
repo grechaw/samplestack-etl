@@ -105,7 +105,7 @@ public class StackTransform extends DefaultTask {
                 id row.attribute("Id")
                 postId row.attribute("PostId")
                 text row.attribute("Text")
-                userId "importedUser" + row.attribute("Id") + "_at_stackoverflow.com"
+                userId row.attribute("UserId")
                 creationDate row.attribute("CreationDate")
         }
         writeSet.add("/comment/" + row.attribute("Id") + ".json",

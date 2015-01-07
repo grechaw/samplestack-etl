@@ -9,17 +9,6 @@ declare namespace search = "http://marklogic.com/appservices/search";
 
 declare option xdmp:mapping "false";
 
-
-declare function make-contribs:votes() {
-    map:entry("votes", 
-        map:new(
-            map:entry("java.util.LinkedHashMap",
-                json:object(
-                ) 
-    )))
-};
-
-
 declare function make-contribs:transform(
     $context as map:map,
     $params as map:map,
@@ -27,7 +16,6 @@ declare function make-contribs:transform(
 ) as document-node()
 {
     let $q := $content/object-node()
-    let $votes := make-contribs:votes()
     let $data :=
         map:new(
             (
@@ -35,13 +23,13 @@ declare function make-contribs:transform(
                 map:new( 
                     map:entry("id", concat("sou", string($q//id)))
                     + map:entry("originalId", string($q//id))
-                    + map:entry("reputation", xs:int($q//reputation))
+                    + map:entry("reputation", if ($q//reputation) then xs:int($q//reputation) else 0)
                     + map:entry("displayName", $q//displayName)
-                    + map:entry("userName", $q//userName)
+                    + map:entry("userName", replace($q//userName/string(), "email.com", "example.com"))
                     + map:entry("aboutMe", $q//aboutMe)
                     + map:entry("websiteUrl", $q//websiteUrl)
                     + map:entry("location", $q//location)
-                    + $votes))))
+                    + map:entry("voteCount", 0)))))
        return
            document {
                xdmp:to-json($data)

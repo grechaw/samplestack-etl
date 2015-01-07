@@ -14,7 +14,7 @@ declare function make-questions:user($user-id) {
       map:new(
           ( map:entry("id", concat("sou", string(.//id))), 
             map:entry("originalId", .//id),
-            map:entry("userName", .//userName),
+            map:entry("userName", replace(.//userName/string(), "email.com", "example.com")),
             map:entry("displayName",  .//displayName)) )
 };
 
@@ -25,20 +25,32 @@ declare function make-questions:comments($post-id) {
         cts:search(collection(), cts:and-query( (cts:directory-query("/comment/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered" ) ! ./node()
     return array-node {
         for $c in $comments
+        (: in the september archive comments don't have appropriate owner ids. 
+         : this is a bug in the archive i think. :)
+        let $user-id := replace(replace($c/userId/string(), "importedUser", ""), "_at_stackoverflow.com", "")
+        let $_ := xdmp:log(("IN COMMENT FOUND USERID", $user-id))
         return 
             map:entry("id", concat("soc", string($c/id))) +
             map:entry("text", $c/text) +
-            map:entry("creationDate", $c/creationDate) +
-            map:entry("owner", make-questions:user($c/userId))
+            map:entry("creationDate", if ($c/creationDate) then $c/creationDate || "Z" else ()) +
+            map:entry("owner", make-questions:user($user-id))
     }
 };
 
-declare function make-questions:votes($post-id) {
+declare function make-questions:votes($map, $post-id) {
     let $votes := cts:search(collection(), cts:and-query( (cts:directory-query("/vote/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered") ! ./node()
     let $up-votes := count($votes[voteTypeId = "2"])
     let $down-votes := count($votes[voteTypeId = "3"])
+    let $upvoters-array := json:array()
+    let $_ := json:array-resize($upvoters-array, $up-votes, "unknown")
+    let $downvoters-array := json:array()
+    let $_ := json:array-resize($downvoters-array, $down-votes, "unknown")
     return
-        map:entry("itemTally", $up-votes - $down-votes)
+        (
+        map:put($map, "itemTally", $up-votes - $down-votes),
+        map:put($map, "upvotingContributorIds", $upvoters-array),
+        map:put($map, "downvotingContributorIds", $downvoters-array)
+        )
 };
 
 
@@ -49,13 +61,14 @@ declare function make-questions:answers($post-id, $accepted-id) {
         array-node {
             for $answer in $answers
             let $answer-id := data($answer/id)
-            return
-                map:entry("id", concat("soa", string($answer/id))) +
-                map:entry("text", $answer/body) +
-                map:entry("creationDate", $answer/creationDate) +
-                map:entry("comments", make-questions:comments($answer//id)) +
-                make-questions:votes($answer-id) +
-                map:entry("owner", make-questions:user($answer/ownerUserId)) 
+            let $map := map:map()
+            let $_ := map:put($map,"id", concat("soa", string($answer/id)))
+            let $_ := map:put($map,"text", $answer/body) 
+            let $_ := map:put($map,"creationDate", if ($answer/creationDate) then $answer/creationDate || "Z" else ()) 
+            let $_ := map:put($map,"comments", make-questions:comments($answer//id))
+            let $_ := make-questions:votes($map, $answer-id) 
+            let $_ := map:put($map,"owner", make-questions:user($answer/ownerUserId))
+            return $map
         }
 
 };
@@ -72,9 +85,8 @@ declare function make-questions:transform(
     let $accepted-answer-id := data($q/acceptedAnswerId)
     let $accepted := 
         if ($accepted-answer-id)
-        then map:entry("acceptedAnswerId", concat("soa", string($q/acceptedAnswerId)))
-        else
-            map:entry("acceptedAnswerId", null-node { })
+        then concat("soa", string($q/acceptedAnswerId))
+        else null-node { }
     let $ownerUser := make-questions:user($user-id)
     let $comments := make-questions:comments($post-id)
     let $tags := data($q/tags)
@@ -82,31 +94,21 @@ declare function make-questions:transform(
         if (exists($tags))
         then array-node { for $t in tokenize($tags, "[<>]") where $t ne "" return $t }
         else array-node { }
-    let $votes := make-questions:votes($post-id)
     let $data :=
-        map:entry("id", concat("soq", string($q/id)))
-        +
-        map:entry("originalId", concat(string($q/id)))
-        +
-        map:entry("creationDate", $q/creationDate)
-        +
-        map:entry("text", $q/body)
-        +
-        map:entry("lastActivityDate", $q/lastActivityDate)
-        +
-        $accepted
-        +
-        map:entry("title", $q/title)
-       +
-       map:entry("comments", make-questions:comments($post-id))
-       +
-       map:entry("answers", make-questions:answers($post-id, $accepted-answer-id))
-       +
-       $votes
-       +
-       map:entry("owner", make-questions:user($q/ownerUserId))
-       +
-       map:entry("tags", $new-tags)
+        let $map := map:map()
+        let $_ := map:put($map,"id", concat("soq", string($q/id)))
+        let $_ := map:put($map,"originalId", concat(string($q/id)))
+        let $_ := map:put($map,"creationDate", if ($q/creationDate) then $q/creationDate || "Z" else ())
+        let $_ := map:put($map,"text", $q/body)
+        let $_ := map:put($map,"lastActivityDate", if ($q/lastActivityDate) then $q/lastActivityDate || "Z" else ())
+        let $_ := map:put($map, "acceptedAnswerId", $accepted)
+        let $_ := map:put($map,"title", $q/title)
+        let $_ := map:put($map,"comments", make-questions:comments($post-id))
+        let $_ := map:put($map,"answers", make-questions:answers($post-id, $accepted-answer-id))
+        let $_ := make-questions:votes($map, $post-id)
+        let $_ := map:put($map,"owner", make-questions:user($q/ownerUserId))
+        let $_ := map:put($map,"tags", $new-tags)
+        return $map
 
     let $data-json := xdmp:to-json($data)
     let $item-tallys := sum($data-json//itemTally/xs:int(.))
@@ -117,13 +119,8 @@ declare function make-questions:transform(
                 map:entry("voteCount", $item-tallys),
                 map:entry("answerCount", $answer-count),
                 if ($q/acceptedAnswerId/string()) 
-                (: workaround to work with EA-3 server 
-                 : TODO, go back to boolean for 8.0-1
                 then map:entry("accepted", true())
                 else map:entry("accepted", false())
-                :)
-                then map:entry("accepted", "true")
-                else map:entry("accepted", "false")
                 ))
        return
            document {
