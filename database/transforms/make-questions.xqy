@@ -25,15 +25,11 @@ declare function make-questions:comments($post-id) {
         cts:search(collection(), cts:and-query( (cts:directory-query("/comment/"), cts:json-property-range-query("postId","=", $post-id))), "unfiltered" ) ! ./node()
     return array-node {
         for $c in $comments
-        (: in the september archive comments don't have appropriate owner ids. 
-         : this is a bug in the archive i think. :)
-        let $user-id := replace(replace($c/userId/string(), "importedUser", ""), "_at_stackoverflow.com", "")
-        let $_ := xdmp:log(("IN COMMENT FOUND USERID", $user-id))
         return 
             map:entry("id", concat("soc", string($c/id))) +
             map:entry("text", $c/text) +
-            map:entry("creationDate", if ($c/creationDate) then $c/creationDate || "Z" else ()) +
-            map:entry("owner", make-questions:user($user-id))
+    map:entry("creationDate", if ($c/creationDate) then $c/creationDate/string() || "Z" else ()) +
+            map:entry("owner", make-questions:user($c/userId))
     }
 };
 
@@ -64,7 +60,7 @@ declare function make-questions:answers($post-id, $accepted-id) {
             let $map := map:map()
             let $_ := map:put($map,"id", concat("soa", string($answer/id)))
             let $_ := map:put($map,"text", $answer/body) 
-            let $_ := map:put($map,"creationDate", if ($answer/creationDate) then $answer/creationDate || "Z" else ()) 
+            let $_ := map:put($map,"creationDate", if ($answer/creationDate) then $answer/creationDate/string() || "Z" else ()) 
             let $_ := map:put($map,"comments", make-questions:comments($answer//id))
             let $_ := make-questions:votes($map, $answer-id) 
             let $_ := map:put($map,"owner", make-questions:user($answer/ownerUserId))
@@ -98,9 +94,9 @@ declare function make-questions:transform(
         let $map := map:map()
         let $_ := map:put($map,"id", concat("soq", string($q/id)))
         let $_ := map:put($map,"originalId", concat(string($q/id)))
-        let $_ := map:put($map,"creationDate", if ($q/creationDate) then $q/creationDate || "Z" else ())
+        let $_ := map:put($map,"creationDate", if ($q/creationDate) then $q/creationDate/string() || "Z" else ())
         let $_ := map:put($map,"text", $q/body)
-        let $_ := map:put($map,"lastActivityDate", if ($q/lastActivityDate) then $q/lastActivityDate || "Z" else ())
+        let $_ := map:put($map,"lastActivityDate", if ($q/lastActivityDate) then $q/lastActivityDate/string() || "Z" else ())
         let $_ := map:put($map, "acceptedAnswerId", $accepted)
         let $_ := map:put($map,"title", $q/title)
         let $_ := map:put($map,"comments", make-questions:comments($post-id))
