@@ -1,7 +1,13 @@
-apply plugin: "groovy"
+/* build.gradle
+ * for an ETL project.
+ * Defines tasks that transform the
+ * publicly available archives of StackOverflow
+ * into a MarkLogic data model for use in the samplestack
+ * application.
+ * See http://github.com/marklogic/marklogic-samplestack
+ */
 
-// dont clear absent-mindedly
-// task dbClear(type: MarkLogicClearTask)
+apply plugin: "groovy"
 
 task loadUsers(type: StackTransform) {
   parseType = "users"

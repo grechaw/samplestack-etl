@@ -1,0 +1,115 @@
+<export><workspace name="samplestack-export"><query name="counts" focus="false" active="true" mode="xquery">xdmp:estimate(cts:search(collection(), cts:directory-query("/questions/"))) ,
+xdmp:estimate(cts:search(collection(), cts:directory-query("com.marklogic.samplestack.domain.Contributor/"))) </query><query name="top-users" focus="false" active="true" mode="xquery">import module namespace search = "http://marklogic.com/appservices/search" at "/MarkLogic/appservices/search/search.xqy";
+
+(: this is an inital search to get a good sample of stack overflow :)
+let $tags := ("angularjs",
+"bluebird",
+"bower",
+"browserify",
+"chai",
+"connect",
+"css",
+"cucmber-js",
+"cucumber-js",
+"express",
+"git",
+"github",
+"github-flavored-markdown",
+"gradle",
+"groovy",
+"gulp",
+"html",
+"istsanbul",
+"jackson",
+"java",
+"javascript",
+"jshint",
+"json",
+"json-schema",
+"ldap",
+"ldapjs",
+"lodash",
+"markdown",
+"marklogic",
+"mocha",
+"momentjs",
+"node-async",
+"node.js",
+"npm",
+"phantomjs",
+"protractor",
+"q",
+"sass",
+"saucelabs",
+"selenium",
+"selenium-webdriver",
+"spring",
+"spring-boot",
+"spring-mvc",
+"spring-security-ldap",
+"xpath",
+"xunit",
+"tag",
+"xml",
+"xquery",
+"xslt",
+"tag",
+"database",
+"nosql",
+"rest",
+"semantic-web",
+"semantics",
+"transactions"
+)
+
+let $tag-query := &lt;search:value-query&gt;
+                      &lt;search:json-property&gt;tags&lt;/search:json-property&gt;
+                  {for $t in $tags return &lt;search:text&gt;{$t}&lt;/search:text&gt;}
+                  &lt;/search:value-query&gt;
+let $string := "(tag:marklogic OR tag:javascript OR tag:xml OR tag:json) AND (tag:" || string-join($tags, " OR tag:") || ')'
+let $results := search:search($string, &lt;search:options&gt;
+&lt;search:constraint name="tag"&gt;
+&lt;search:value&gt;
+&lt;search:json-property&gt;tags&lt;/search:json-property&gt;
+&lt;/search:value&gt;
+&lt;/search:constraint&gt;
+&lt;search:constraint name="id"&gt;
+&lt;search:range type="xs:string"&gt;
+&lt;search:json-property&gt;id&lt;/search:json-property&gt;
+&lt;search:facet-option&gt;limit=100&lt;/search:facet-option&gt;
+&lt;search:facet-option&gt;frequency-order&lt;/search:facet-option&gt;
+&lt;/search:range&gt;
+&lt;/search:constraint&gt;
+&lt;search:debug&gt;true&lt;/search:debug&gt;
+&lt;search:page-length&gt;100&lt;/search:page-length&gt;
+&lt;/search:options&gt;)
+let $users := $results//search:facet-value
+return  xdmp:document-insert("/topusers.xml", $results) </query><query name="export" focus="true" active="true" mode="xquery">xquery version "1.0-ml";
+import module namespace search = "http://marklogic.com/appservices/search" at "/MarkLogic/appservices/search/search.xqy";
+let $users := (doc("/topusers.xml")//search:facet-value/string())[1 to 10]
+
+let $results := (
+cts:search( collection() , 
+cts:word-query("marklogic")) 
+,
+cts:search( collection(), 
+cts:and-query( ( 
+cts:json-property-value-query("id", $users),
+cts:directory-query("/questions/") ) ),
+"score-random"
+))[1 to 3000]
+for $result in $results
+let $uri := "/tmp/samplestack/seed-data1.7/" || base-uri($result)
+return
+xdmp:save($uri, $result)</query><query name="moreownerids" focus="false" active="true" mode="xquery">xquery version "1.0-ml";
+
+let $f := xdmp:filesystem-file("/tmp/samplestack/seed-data1.7/users.txt")
+let $strings := distinct-values(fn:tokenize($f, '[,"&amp;#10;]'))
+for $result in 
+cts:search(collection(),
+   cts:and-query( (
+   cts:directory-query("com.marklogic.samplestack.domain.Contributor/"),
+   cts:json-property-value-query("id", $strings))
+   ))
+let $uri := "/tmp/samplestack/seed-data1.7/" || base-uri($result)
+return xdmp:save($uri, $result)</query></workspace></export>
