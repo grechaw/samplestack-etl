@@ -21,7 +21,7 @@ several places that could be improved as I'm running through this README...
 
 The ETL process:
 
-1. Use your favorite torrent client to download Stack Overflow Archives.
+1. Use your favorite torrent client to download Stack Overflow archives.
    We will not use all of the files, so if you want to keep the download a 
    little smaller skip PostHistory and PostLinks.
 
@@ -41,7 +41,7 @@ The ETL process:
     http://www.lowerelement.com/Geekery/XML/markdown.xsl
 
 5. Run `./gradlew dbconfigure`  If configured correctly, this command will
-   install two transformsn on one of the above servers, which will be used in
+   install two transforms on one of the above servers, which will be used in
    the second step of the Samplestack ETL.
 
 6.  The following commands, if they all complete, will load all the data into 
